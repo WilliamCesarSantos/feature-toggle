@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/meeting_room_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    out-of-order: false
+    validate-on-migrate: true
+    schemas: public
+    placeholders:
+      schema: public
+
+  cloud:
+    stream:
+      bindings:
+        toggle-in:
+          destination: metting-room-feature-toggle-topic
+          group: meeting-room
+      binder: sqs
+    aws:
+      credentials:
+        static:
+          access-key: test
+          secret-key: test
+      region:
+        static: us-east-1
+      endpoint:
+        uri: http://localhost:4566
+
+aws:
+  sqs:
+    endpoint: http://localhost:4566
+  sns:
+    endpoint: http://localhost:4566
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

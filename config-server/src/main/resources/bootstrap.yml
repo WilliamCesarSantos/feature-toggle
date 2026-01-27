@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: config-server
+  cloud:
+    aws:
+      credentials:
+        static:
+          access-key: test
+          secret-key: test
+      region:
+        static: us-east-1
+      s3:
+        endpoint: http://localstack:4566
+      ssm:
+        endpoint: http://localstack:4566
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud: DEBUG
+    software.amazon.awssdk: DEBUG
+
