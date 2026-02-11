@@ -3,6 +3,8 @@ spring:
     bus:
       enabled: true
       id: ${spring.application.name}:${server.port}
+      kafka:
+        enabled: true
 
     stream:
       default-binder: kafka
@@ -10,7 +12,7 @@ spring:
         definition: springCloudBusOutput
       bindings:
         springCloudBusOutput:
-          destination: feature-toggle-topic
+          destination: toggle-updated-topic
           binder: kafka
       kafka:
         bindings:

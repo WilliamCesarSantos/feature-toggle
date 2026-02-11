@@ -13,4 +13,6 @@ spring:
           secret-key: guest
       region:
         static: sa-east-1
+      ssm:
+        endpoint: http://localhost:4566
 

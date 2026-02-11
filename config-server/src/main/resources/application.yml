@@ -11,7 +11,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,env,busrefresh,monitor
+        include: health,info,env
   endpoint:
     health:
       show-details: always

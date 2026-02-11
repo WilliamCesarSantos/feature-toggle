@@ -2,7 +2,6 @@ dependencies {
     // Config Server
     implementation("org.springframework.cloud:spring-cloud-config-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.cloud:spring-cloud-config-monitor")
 
     // Spring Cloud Stream com Kafka Binder
     implementation("org.springframework.cloud:spring-cloud-stream")

@@ -14,7 +14,7 @@ services:
       - AWS_DEFAULT_REGION=sa-east-1
       - AWS_ACCESS_KEY_ID=guest
       - AWS_SECRET_ACCESS_KEY=guest
-      - SERVICES=sns,sqs,ssm,s3
+      - SERVICES=ssm,s3
     volumes:
       - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -133,7 +133,6 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - feature-toggle
     healthcheck:
@@ -141,6 +140,34 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  kafka-topics-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-topics-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        kafka-topics --create --topic toggle-updated-topic --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        echo 'Topics created successfully'
+      "
+    networks:
+      - feature-toggle
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8282:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - feature-toggle
 
 networks:
   feature-toggle:
