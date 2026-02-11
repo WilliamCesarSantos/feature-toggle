@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    config:
+      server:
+        awsparamstore:
+          origin: "aws:parameter:"
+          prefix: /config
+          profile-separator: "/"
+          recursive: true
+          decrypt-values: true
+          max-results: 10

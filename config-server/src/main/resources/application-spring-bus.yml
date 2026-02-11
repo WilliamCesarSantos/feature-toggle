@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port}
+
+    stream:
+      default-binder: kafka
+      function:
+        definition: springCloudBusOutput
+      bindings:
+        springCloudBusOutput:
+          destination: feature-toggle-topic
+          binder: kafka
+      kafka:
+        bindings:
+          springCloudBusOutput:
+            producer:
+              header-mode: payload

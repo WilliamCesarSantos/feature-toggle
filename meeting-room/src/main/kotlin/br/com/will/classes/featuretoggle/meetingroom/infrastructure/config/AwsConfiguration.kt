@@ -12,11 +12,11 @@ import software.amazon.awssdk.services.sqs.SqsClient
 class AwsConfiguration(
     @field:Value("\${aws.sqs.endpoint:http://localhost:4566}")
     private val sqsEndpoint: String,
-    @field:Value("\${aws.region.static:us-east-1}")
+    @field:Value("\${aws.region.static:sa-east-1}")
     private val region: String,
-    @field:Value("\${aws.credentials.access-key:test}")
+    @field:Value("\${aws.credentials.access-key:guest}")
     private val accessKey: String,
-    @field:Value("\${aws.credentials.secret-key:test}")
+    @field:Value("\${aws.credentials.secret-key:guest}")
     private val secretKey: String
 ) {
 

@@ -41,6 +41,7 @@ subprojects {
 
     dependencies {
         "implementation"(platform("org.springframework.cloud:spring-cloud-dependencies:2025.1.0"))
+        "implementation"(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.0"))
         "implementation"("org.jetbrains.kotlin:kotlin-reflect")
         "implementation"("org.jetbrains.kotlin:kotlin-stdlib")
     }

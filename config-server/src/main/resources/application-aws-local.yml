@@ -1,0 +1,16 @@
+spring:
+  cloud:
+    config:
+      server:
+        awsparamstore:
+          region: sa-east-1
+          endpoint: http://localhost:4566
+
+    aws:
+      credentials:
+        static:
+          access-key: guest
+          secret-key: guest
+      region:
+        static: sa-east-1
+

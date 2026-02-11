@@ -1,4 +1,7 @@
 spring:
+  application:
+    name: meeting-room
+
   datasource:
     url: jdbc:postgresql://localhost:5432/meeting_room_db
     username: postgres
@@ -25,12 +28,44 @@ spring:
       schema: public
 
   cloud:
+    # Spring Cloud Bus
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port:8082}
+
+    # Spring Cloud Stream for toggles and bus
     stream:
+      default-binder: kafka
       bindings:
         toggle-in:
           destination: metting-room-feature-toggle-topic
           group: meeting-room
-      binder: sqs
+          binder: kafka
+        # Bus bindings
+        springCloudBusInput:
+          destination: feature-toggle-topic
+          group: meeting-room
+          binder: kafka
+        springCloudBusOutput:
+          destination: feature-toggle-topic
+          binder: kafka
+
+      # Kafka Binder Configuration
+      kafka:
+        binder:
+          brokers: localhost:9092
+          zkNodes: localhost:2181
+        bindings:
+          toggle-in:
+            consumer:
+              header-mode: payload
+          springCloudBusInput:
+            consumer:
+              header-mode: payload
+          springCloudBusOutput:
+            producer:
+              header-mode: payload
+
     aws:
       credentials:
         static:
@@ -38,18 +73,23 @@ spring:
           secret-key: test
       region:
         static: us-east-1
-      endpoint:
-        uri: http://localhost:4566
 
 aws:
   sqs:
-    endpoint: http://localhost:4566
+    endpoint: http://localhost.localstack.cloud:4566
   sns:
-    endpoint: http://localhost:4566
+    endpoint: http://localhost.localstack.cloud:4566
+  ssl:
+    verify: false
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,env,busrefresh
+  endpoint:
+    health:
+      show-details: always
+    bus-refresh:
+      enabled: true
 
