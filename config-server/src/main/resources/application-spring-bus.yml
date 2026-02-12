@@ -11,7 +11,10 @@ spring:
       function:
         definition: springCloudBusOutput
       bindings:
-        springCloudBusOutput:
+        springCloudBus-out-0:
+          destination: springCloudBus
+          binder: kafka
+        toggle-updated-topic-out-0:
           destination: toggle-updated-topic
           binder: kafka
       kafka:

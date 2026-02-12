@@ -1,6 +1,7 @@
 spring:
   application:
-    name: meeting-room-service
+    name: meeting-room-app
   cloud:
     config:
+      enabled: false
       uri: http://localhost:8888

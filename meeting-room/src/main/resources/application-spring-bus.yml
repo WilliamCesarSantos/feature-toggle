@@ -1,0 +1,26 @@
+spring:
+  cloud:
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port}
+      kafka:
+        enabled: true
+
+    stream:
+      default-binder: kafka
+      function:
+        definition: springCloudBus
+      bindings:
+        springCloudBus-in-0:
+          destination: springCloudBus
+          group: meeting-room-refresh-all
+          binder: kafka
+          consumer:
+            start-offset: earliest
+      kafka:
+        bindings:
+          springCloudBus-in-0:
+            consumer:
+              configuration:
+                value.deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+                spring.json.trusted.packages: "*"

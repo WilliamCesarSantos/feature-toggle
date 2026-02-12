@@ -1,9 +1,5 @@
 package br.com.will.classes.featuretoggle.configserver.service
 
-import org.springframework.cloud.bus.BusProperties
-import org.springframework.cloud.bus.event.Destination
-import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.PutParameterRequest
@@ -11,8 +7,7 @@ import software.amazon.awssdk.services.ssm.model.PutParameterRequest
 @Service
 class ParameterService(
     private val ssmClient: SsmClient,
-    private val eventPublisher: ApplicationEventPublisher,
-    private val busProperties: BusProperties
+    private val messageService: MessageService
 ) {
 
     fun updateParameter(
@@ -28,18 +23,12 @@ class ParameterService(
             .build()
 
         val response = ssmClient.putParameter(request)
-        publishRefreshEvent()
-        return "Parameter '$parameterName' updated successfully. Version: ${response.version()}"
-    }
-
-    fun publishRefreshEvent(destination: String = "*") {
-        val serviceName = busProperties.id ?: "config-server"
-        val refreshEvent = RefreshRemoteApplicationEvent(
-            this,
-            serviceName,
-            Destination { destination }
+        messageService.publishRefreshEvent(
+            parameterName,
+            parameterValue,
+            parameterType
         )
-        eventPublisher.publishEvent(refreshEvent)
+        return "Parameter '$parameterName' updated successfully. Version: ${response.version()}"
     }
 
 }

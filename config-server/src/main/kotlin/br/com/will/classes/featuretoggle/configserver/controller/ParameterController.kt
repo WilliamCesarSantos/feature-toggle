@@ -1,5 +1,6 @@
 package br.com.will.classes.featuretoggle.configserver.controller
 
+import br.com.will.classes.featuretoggle.configserver.service.MessageService
 import br.com.will.classes.featuretoggle.configserver.service.ParameterService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -11,7 +12,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/parameters")
 class ParameterController(
-    private val parameterService: ParameterService
+    private val parameterService: ParameterService,
+    private val messageService: MessageService
 ) {
 
     @PostMapping("/update")
@@ -37,7 +39,7 @@ class ParameterController(
     fun refreshAllClients(
         @RequestParam("destination", defaultValue = "*") destination: String
     ): ResponseEntity<ParameterResponse> {
-        parameterService.publishRefreshEvent(destination)
+        messageService.publishRefreshEvent(destination)
         return ResponseEntity.ok(
             ParameterResponse(
                 success = true,

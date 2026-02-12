@@ -6,12 +6,21 @@ import java.util.concurrent.ConcurrentHashMap
 @Component
 class FeatureToggleState {
 
-    private val toggles = ConcurrentHashMap<String, Boolean>()
+    private val toggles = ConcurrentHashMap<String, String>()
 
     fun isEnabled(feature: String): Boolean =
-        toggles.getOrDefault(feature, false)
+        toggles[feature]?.toBoolean() ?: false
 
-    fun update(feature: String, enabled: Boolean) {
-        toggles[feature] = enabled
+    fun value(feature: String) =
+        toggles.getValue(feature)
+
+    fun update(feature: String, value: String) {
+        toggles[feature] = value
     }
+
+    fun updateAll(newToggles: Map<String, String>) {
+        toggles.clear()
+        toggles.putAll(newToggles)
+    }
+
 }
