@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
-    kotlin("jvm") version "2.3.0" apply false
-    kotlin("plugin.spring") version "2.3.0" apply false
-    id("org.springframework.boot") version "4.0.0" apply false
+    kotlin("jvm") version "2.1.21" apply false
+    kotlin("plugin.spring") version "2.1.21" apply false
+    id("org.springframework.boot") version "3.4.1" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
@@ -26,22 +26,21 @@ subprojects {
 
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
-            toolchain {
-                languageVersion.set(JavaLanguageVersion.of(25))
-            }
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
         }
     }
 
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             freeCompilerArgs.addAll(listOf("-Xjsr305=strict"))
-            jvmTarget.set(JvmTarget.JVM_25)
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
 
     dependencies {
-        "implementation"(platform("org.springframework.cloud:spring-cloud-dependencies:2025.1.0"))
-        "implementation"(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.0"))
+        "implementation"(platform("org.springframework.cloud:spring-cloud-dependencies:2024.0.0"))
+        "implementation"(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.2.1"))
         "implementation"("org.jetbrains.kotlin:kotlin-reflect")
         "implementation"("org.jetbrains.kotlin:kotlin-stdlib")
     }

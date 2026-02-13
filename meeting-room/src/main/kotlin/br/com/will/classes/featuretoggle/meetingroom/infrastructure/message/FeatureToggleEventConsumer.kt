@@ -4,14 +4,12 @@ import br.com.will.classes.featuretoggle.meetingroom.infrastructure.featuretoggl
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.bus.event.Destination
 import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
-import org.springframework.context.annotation.Bean
+import org.springframework.context.event.EventListener
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.KafkaHeaders
-import org.springframework.messaging.Message
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 @Component
 class FeatureToggleEventConsumer(
@@ -24,20 +22,32 @@ class FeatureToggleEventConsumer(
         logger.info("===== FeatureToggleEventConsumer inicializado =====")
     }
 
-    @Bean
-    fun springCloudBus(): Consumer<Message<String>> {
-        logger.info("===== Bean springCloudBus sendo criado =====")
-        return Consumer { event ->
-            try {
-                logger.info("Recebido evento de refresh do Spring Cloud Bus: origin={}", "config-server")
+    @EventListener
+    fun handleRefreshEvent(event: RefreshRemoteApplicationEvent) {
+        try {
+            logger.info("===== Recebido evento de refresh do Spring Cloud Bus: origin={}, destination={}",
+                event.originService, event.destinationService)
 
-                // Atualiza o estado do toggle
-                featureToggleState.updateAll(mapOf())
+            // Atualiza o estado do toggle
+            featureToggleState.updateAll(mapOf())
 
-                logger.info("Feature toggles atualizados via Bus")
-            } catch (e: Exception) {
-                logger.error("Erro ao processar evento de refresh", e)
-            }
+            logger.info("===== Feature toggles atualizados via Bus =====")
+        } catch (e: Exception) {
+            logger.error("Erro ao processar evento de refresh", e)
+        }
+    }
+
+    @EventListener
+    fun handleCustomToggleRefreshEvent(event: FeatureToggleRefreshEvent) {
+        try {
+            logger.info("===== Recebido evento customizado de feature toggle: parameter={}, value={}",
+                event.parameterName, event.parameterValue)
+
+            // TODO: Processar o evento customizado
+
+            logger.info("===== Feature toggle customizado processado =====")
+        } catch (e: Exception) {
+            logger.error("Erro ao processar evento customizado de feature toggle", e)
         }
     }
 
@@ -48,17 +58,26 @@ class FeatureToggleEventConsumer(
     )
     fun consumeToggleUpdateEvent(
         @Payload message: String,
-        @Header(KafkaHeaders.RECEIVED_TOPIC, required = false) topic: String?
+        @Header(KafkaHeaders.RECEIVED_TOPIC, required = false) topic: String?,
+        @Header(KafkaHeaders.RECEIVED_PARTITION, required = false) partition: Int?,
+        @Header(KafkaHeaders.OFFSET, required = false) offset: Long?,
+        @Header(KafkaHeaders.ACKNOWLEDGMENT, required = false) acknowledgment: org.springframework.kafka.support.Acknowledgment?
     ) {
         try {
-            logger.info("Recebido evento do tópico toggle-updated-topic: topic={}, message={}", topic, message)
+            logger.info("===== KAFKA CONSUMER ACIONADO =====")
+            logger.info("Recebido evento do tópico toggle-updated-topic")
+            logger.info("Topic: {}, Partition: {}, Offset: {}", topic, partition, offset)
+            logger.info("Message: {}", message)
 
             // TODO: Deserializar e processar a mensagem
             // Por enquanto, apenas logando para confirmar que está funcionando
 
-            logger.info("Evento de toggle processado com sucesso")
+            // Acknowledge the message
+            acknowledgment?.acknowledge()
+
+            logger.info("===== Evento de toggle processado com sucesso =====")
         } catch (e: Exception) {
-            logger.error("Erro ao processar evento de toggle", e)
+            logger.error("===== ERRO ao processar evento de toggle =====", e)
         }
     }
 }

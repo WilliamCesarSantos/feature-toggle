@@ -3,22 +3,21 @@ spring:
     bus:
       enabled: true
       id: ${spring.application.name}:${server.port}
-      kafka:
+      refresh:
+        enabled: true
+      env:
         enabled: true
 
     stream:
       default-binder: kafka
-      function:
-        definition: springCloudBusOutput
       bindings:
         springCloudBus-out-0:
           destination: springCloudBus
-          binder: kafka
-        toggle-updated-topic-out-0:
+        springCloudBus-in-0:
+          destination: springCloudBus
+          group: ${spring.application.name}
+        toggleUpdated-out-0:
           destination: toggle-updated-topic
-          binder: kafka
       kafka:
-        bindings:
-          springCloudBusOutput:
-            producer:
-              header-mode: payload
+        binder:
+          auto-create-topics: false

@@ -11,6 +11,10 @@ dependencies {
     // Spring Cloud Bus
     implementation("org.springframework.cloud:spring-cloud-bus")
 
+    // Jackson for JSON processing
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+
     implementation("org.postgresql:postgresql")
 
     implementation("org.flywaydb:flyway-core")

@@ -3,9 +3,8 @@ spring:
     config:
       server:
         awsparamstore:
+          enabled: true
           origin: "aws:parameter:"
           prefix: /config
           profile-separator: "/"
-          recursive: true
-          decrypt-values: true
-          max-results: 10
+          default-label: main
