@@ -56,10 +56,10 @@ create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/replicat
 echo "=== Kafka Configuration ==="
 create_parameter "/config/meeting-room/spring/kafka/bootstrap-servers" "localhost:9092" "String"
 
-# Toggles
-echo "=== Toggles Configuration ==="
-create_parameter "/config/meeting-room/reservation/capacity-check" "true" "String"
-create_parameter "/config/meeting-room/reservation/schedule-conflict-check" "true" "String"
+# Feature Toggles Configuration
+echo "=== Feature Toggles Configuration ==="
+create_parameter "/config/meeting-room/feature/toggles/reservation.capacity-check" "true" "String"
+create_parameter "/config/meeting-room/feature/toggles/reservation.schedule-conflict-check" "true" "String"
 
 echo "Initialization completed!"
 
