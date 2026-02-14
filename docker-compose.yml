@@ -102,7 +102,7 @@ services:
       retries: 10
 
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:4.1.1
     container_name: kafka
     ports:
       - "9092:9092"
@@ -144,30 +144,18 @@ services:
       start_period: 40s
 
   kafka-topics-init:
-    image: apache/kafka:latest
+    image: apache/kafka:4.1.1
     container_name: kafka-topics-init
     depends_on:
       kafka:
         condition: service_healthy
     command: >
       bash -c "
-        kafka-topics.sh --create --topic toggle-updated-topic --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
-        kafka-topics.sh --create --topic springCloudBus --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        export PATH=/opt/kafka/bin:$$PATH &&
+        kafka-topics.sh --create --topic toggle-updated-topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        kafka-topics.sh --create --topic springCloudBus --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
         echo 'Topics created successfully'
       "
-    networks:
-      - feature-toggle
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    ports:
-      - "8282:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-    depends_on:
-      - kafka
     networks:
       - feature-toggle
 

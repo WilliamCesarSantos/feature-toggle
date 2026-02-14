@@ -5,8 +5,42 @@ spring:
   application:
     name: config-server
   profiles:
-    active: awsparamstore,spring-bus,aws-local,kafka-local
+    active: awsparamstore
 
+  cloud:
+    # Config Server - AWS Parameter Store
+    config:
+      server:
+        awsparamstore:
+          enabled: true
+          origin: "aws:parameter:"
+          prefix: /config
+          profile-separator: "/"
+          default-label: main
+
+    # Spring Cloud Bus
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port}
+      refresh:
+        enabled: true
+      env:
+        enabled: true
+
+    # Spring Cloud Stream
+    stream:
+      # TODO check is this needed
+      default-binder: kafka
+      bindings:
+        springCloudBus-out-0:
+          destination: springCloudBus
+        springCloudBus-in-0:
+          destination: springCloudBus
+          group: ${spring.application.name}
+        toggleUpdated-out-0:
+          destination: toggle-updated-topic
+
+# Management Endpoints
 management:
   endpoints:
     web:

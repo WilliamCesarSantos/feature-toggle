@@ -17,10 +17,5 @@ class FeatureToggleState {
     fun update(feature: String, value: String) {
         toggles[feature] = value
     }
-
-    fun updateAll(newToggles: Map<String, String>) {
-        toggles.clear()
-        toggles.putAll(newToggles)
-    }
-
+    
 }
