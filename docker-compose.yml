@@ -101,56 +101,58 @@ services:
       timeout: 3s
       retries: 10
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: ["CMD", "echo", "srvr", "|", "nc", "localhost", "2181"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:latest
     container_name: kafka
     ports:
       - "9092:9092"
-      - "9101:9101"
-    depends_on:
-      zookeeper:
-        condition: service_healthy
+      - "9093:9093"
+    user: root
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KRaft settings
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://kafka:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Cluster settings
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+
+      # Performance settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
     networks:
       - feature-toggle
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server=localhost:9092 2>&1 | grep -q ApiVersion || exit 1"]
+      interval: 10s
+      timeout: 10s
       retries: 10
+      start_period: 40s
 
   kafka-topics-init:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:latest
     container_name: kafka-topics-init
     depends_on:
       kafka:
         condition: service_healthy
     command: >
       bash -c "
-        kafka-topics --create --topic toggle-updated-topic --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
-        kafka-topics --create --topic springCloudBus --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        kafka-topics.sh --create --topic toggle-updated-topic --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        kafka-topics.sh --create --topic springCloudBus --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
         echo 'Topics created successfully'
       "
     networks:
@@ -164,7 +166,6 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
       - kafka
     networks:
@@ -176,3 +177,4 @@ networks:
 
 volumes:
   postgres_data:
+  kafka_data:

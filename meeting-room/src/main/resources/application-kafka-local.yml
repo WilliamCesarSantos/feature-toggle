@@ -4,6 +4,5 @@ spring:
       kafka:
         binder:
           brokers: localhost:9092
-          zkNodes: localhost:2181
   kafka:
     bootstrap-servers: localhost:9092

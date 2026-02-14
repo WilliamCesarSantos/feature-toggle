@@ -15,4 +15,5 @@ spring:
       kafka:
         binder:
           auto-create-topics: false
+          replication-factor: 1
 
