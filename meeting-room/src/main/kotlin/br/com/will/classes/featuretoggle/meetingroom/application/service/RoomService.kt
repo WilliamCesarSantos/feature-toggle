@@ -13,8 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class RoomService(
     private val loadRoomPort: LoadRoomPort,
-    private val saveRoomPort: SaveRoomPort,
-    private val featureTogglePort: FeatureTogglePort
+    private val saveRoomPort: SaveRoomPort
 ) : ManageRoomUseCase {
 
     @Transactional

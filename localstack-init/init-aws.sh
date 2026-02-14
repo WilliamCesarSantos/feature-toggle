@@ -32,19 +32,50 @@ create_parameter() {
   fi
 }
 
-# Create all parameters
-create_parameter "/config/application/spring/datasource/url" "jdbc:postgresql://postgres:5432/meeting_room_db" "String"
-create_parameter "/config/application/spring/datasource/username" "postgres" "String"
-create_parameter "/config/application/spring/datasource/password" "postgres" "SecureString"
-create_parameter "/config/application/aws/sns/topic-arn" "$TOPIC_ARN" "String"
+# Database Configuration
+echo "=== Database Configuration ==="
+create_parameter "/config/meeting-room/spring/datasource/url" "jdbc:postgresql://localhost:5432/meeting_room_db" "String"
+create_parameter "/config/meeting-room/spring/datasource/username" "postgres" "String"
+create_parameter "/config/meeting-room/spring/datasource/password" "postgres" "SecureString"
+create_parameter "/config/meeting-room/spring/datasource/driver-class-name" "org.postgresql.Driver" "String"
+
+# JPA Configuration
+echo "=== JPA Configuration ==="
+create_parameter "/config/meeting-room/spring/jpa/hibernate/ddl-auto" "none" "String"
+create_parameter "/config/meeting-room/spring/jpa/show-sql" "false" "String"
+create_parameter "/config/meeting-room/spring/jpa/properties/hibernate/dialect" "org.hibernate.dialect.PostgreSQLDialect" "String"
+create_parameter "/config/meeting-room/spring/jpa/properties/hibernate/format_sql" "true" "String"
+
+# Kafka Binder Configuration
+echo "=== Kafka Binder Configuration ==="
+create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/brokers" "localhost:9092" "String"
+create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/auto-create-topics" "false" "String"
+create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/replication-factor" "1" "String"
+
+# Kafka Configuration
+echo "=== Kafka Configuration ==="
+create_parameter "/config/meeting-room/spring/kafka/bootstrap-servers" "localhost:9092" "String"
+
+# Toggles
+echo "=== Toggles Configuration ==="
+create_parameter "/config/meeting-room/reservation/capacity-check" "true" "String"
+create_parameter "/config/meeting-room/reservation/schedule-conflict-check" "true" "String"
 
 echo "Initialization completed!"
 
 # List all Parameter Store parameters
 echo ""
-echo "=== AWS Parameter Store Parameters ==="
+echo "=== AWS Parameter Store Parameters for meeting-room ==="
+aws --endpoint-url=http://localhost:4566 ssm get-parameters-by-path \
+  --path "/config/meeting-room" \
+  --recursive \
+  --with-decryption \
+  --output table
+
+echo ""
+echo "=== Total Parameters Created ==="
 aws --endpoint-url=http://localhost:4566 ssm get-parameters-by-path \
   --path "/config" \
   --recursive \
-  --with-decryption \
+  --query 'Parameters[*].Name' \
   --output table

@@ -4,6 +4,33 @@ server:
 spring:
   application:
     name: meeting-room
+  config:
+    import: 'configserver:http://localhost:8888'
+  cloud:
+    config:
+      enabled: true
+      fail-fast: false
+      retry:
+        max-attempts: 3
+        initial-interval: 1000
+    bus:
+      enabled: true
+      id: meeting-room-group
+      kafka:
+        enabled: true
+      env:
+        enabled: true
+    stream:
+      default-binder: kafka
+      function:
+        definition: toggleUpdatedConsumer
+      bindings:
+        toggleUpdatedConsumer-in-0:
+          destination: toggle-updated-topic
+          group: meeting-room-toggles-group
+          consumer:
+            max-attempts: 3
+            back-off-initial-interval: 1000
 
   flyway:
     enabled: true
@@ -16,50 +43,14 @@ spring:
     placeholders:
       schema: public
 
-  cloud:
-    bus:
-      enabled: true
-      id: ${spring.application.name}:${server.port}
-      trace:
-        enabled: true
-      kafka:
-        enabled: true
-      refresh:
-        enabled: true
-      env:
-        enabled: true
-
-    stream:
-      default-binder: kafka
-
-      # Definição das funções consumidoras
-      function:
-        definition: toggleUpdatedConsumer
-
-      bindings:
-        # Binding para eventos customizados de toggle
-        toggleUpdatedConsumer-in-0:
-          destination: toggle-updated-topic
-          group: meeting-room-toggles-group
-          consumer:
-            max-attempts: 3
-            back-off-initial-interval: 1000
-
-      kafka:
-        binder:
-          auto-create-topics: false
-          replication-factor: 1
-
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,env,busrefresh,refresh
+        include: health,info,env,refresh
   endpoint:
     health:
       show-details: always
-    bus-refresh:
-      enabled: true
     refresh:
       enabled: true
 

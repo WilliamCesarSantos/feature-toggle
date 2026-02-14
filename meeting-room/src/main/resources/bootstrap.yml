@@ -1,7 +1,0 @@
-spring:
-  application:
-    name: meeting-room-app
-  cloud:
-    config:
-      enabled: false
-      uri: http://localhost:8888

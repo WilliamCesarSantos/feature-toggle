@@ -33,13 +33,13 @@ class ReservationService(
         val room = loadRoomPort.loadById(roomId)
             ?: throw ResourceNotFoundException("MeetingRoom", roomId)
 
-        if (featureTogglePort.isEnabled("capacity-check") && participants > room.capacity) {
+        if (featureTogglePort.isEnabled("reservation.capacity-check") && participants > room.capacity) {
             throw InvalidReservationException(
                 "Requested participants ($participants) exceeds room capacity (${room.capacity})"
             )
         }
 
-        if (featureTogglePort.isEnabled("schedule-conflict-check")) {
+        if (featureTogglePort.isEnabled("reservation.schedule-conflict-check")) {
             val conflicting = loadReservationPort.loadConflictingReservations(
                 roomId, startTime, endTime
             )
