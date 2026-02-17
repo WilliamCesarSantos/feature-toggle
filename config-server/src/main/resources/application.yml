@@ -8,6 +8,15 @@ spring:
     active: awsparamstore
 
   cloud:
+    # AWS Configuration
+    aws:
+      region:
+        static: sa-east-1
+      credentials:
+        access-key: guest
+        secret-key: guest
+      endpoint: http://localhost:4566
+
     # Config Server - AWS Parameter Store
     config:
       server:
@@ -17,6 +26,8 @@ spring:
           prefix: /config
           profile-separator: "/"
           default-label: main
+          endpoint: http://localhost:4566
+          region: sa-east-1
 
     # Spring Cloud Bus
     bus:
@@ -29,8 +40,10 @@ spring:
 
     # Spring Cloud Stream
     stream:
-      # TODO check is this needed
       default-binder: kafka
+      kafka:
+        binder:
+          brokers: localhost:9092
       bindings:
         springCloudBus-out-0:
           destination: springCloudBus
@@ -39,6 +52,9 @@ spring:
           group: ${spring.application.name}
         toggleUpdated-out-0:
           destination: toggle-updated-topic
+
+  kafka:
+    bootstrap-servers: localhost:9092
 
 # Management Endpoints
 management:

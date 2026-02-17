@@ -25,23 +25,13 @@ class MessageService(
         destination: String = "*"
     ) {
         val serviceName = busProperties.id ?: SERVICE_NAME_DEFAULT
-
-        logger.info("===== PUBLICANDO EVENTO DE REFRESH =====")
-        logger.info("Service Name: {}", serviceName)
-        logger.info("Destination: {}", destination)
-        logger.info("Binding Name: {}", REFRESH_ALL_EVENT_BINDING_NAME)
-
         val refreshEvent = RefreshRemoteApplicationEvent(
             this,
             serviceName
         ) { destination }
 
-        logger.info("Evento criado: {}", refreshEvent)
-
-        val result = streamBridge.send(REFRESH_ALL_EVENT_BINDING_NAME, refreshEvent)
-
-        logger.info("Resultado do envio: {}", result)
-        logger.info("===== EVENTO PUBLICADO COM SUCESSO =====")
+        streamBridge.send(REFRESH_ALL_EVENT_BINDING_NAME, refreshEvent)
+        logger.info("Sent event: {}", refreshEvent)
     }
 
     fun publishRefreshEvent(
@@ -52,12 +42,6 @@ class MessageService(
     ) {
         val serviceName = busProperties.id ?: SERVICE_NAME_DEFAULT
 
-        logger.info("===== PUBLICANDO EVENTO DE FEATURE TOGGLE =====")
-        logger.info("Service Name: {}", serviceName)
-        logger.info("Destination: {}", destination)
-        logger.info("Parameter Name: {}", parameterName)
-        logger.info("Binding Name: {}", REFRESH_FEATURE_TOGGLE_EVENT_BINDING_NAME)
-
         val refreshEvent = FeatureToggleRefreshEvent(
             this,
             serviceName,
@@ -67,10 +51,9 @@ class MessageService(
             parameterType
         )
 
-        val result = streamBridge.send(REFRESH_FEATURE_TOGGLE_EVENT_BINDING_NAME, refreshEvent)
+        streamBridge.send(REFRESH_FEATURE_TOGGLE_EVENT_BINDING_NAME, refreshEvent)
 
-        logger.info("Resultado do envio: {}", result)
-        logger.info("===== EVENTO DE FEATURE TOGGLE PUBLICADO =====")
+        logger.info("Sent custom event: {}", refreshEvent)
     }
 }
 

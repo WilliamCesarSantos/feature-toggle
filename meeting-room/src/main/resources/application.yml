@@ -13,24 +13,39 @@ spring:
       retry:
         max-attempts: 3
         initial-interval: 1000
-    bus:
-      enabled: true
-      id: meeting-room-group
-      kafka:
-        enabled: true
-      env:
-        enabled: true
     stream:
       default-binder: kafka
+      kafka:
+        binder:
+          auto-create-topics: false
+          consumer-properties:
+            auto.offset.reset: latest
+            enable.auto.commit: true
+            key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
       function:
-        definition: toggleUpdatedConsumer
+        definition: toggleUpdatedConsumer;configRefreshConsumer
       bindings:
+        # Consumer para Feature Toggles
         toggleUpdatedConsumer-in-0:
           destination: toggle-updated-topic
           group: meeting-room-toggles-group
+          binder: kafka
           consumer:
-            max-attempts: 3
-            back-off-initial-interval: 1000
+            auto-startup: true
+            use-native-decoding: false
+            max-attempts: 1
+            concurrency: 1
+        # Consumer para Config Refresh (Spring Cloud Bus)
+        configRefreshConsumer-in-0:
+          destination: springCloudBus
+          group: meeting-room-config-refresh-group
+          binder: kafka
+          consumer:
+            auto-startup: true
+            use-native-decoding: false
+            max-attempts: 1
+            concurrency: 1
 
   flyway:
     enabled: true
@@ -53,4 +68,11 @@ management:
       show-details: always
     refresh:
       enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.stream: DEBUG
+    org.springframework.cloud.function: DEBUG
+    org.springframework.kafka: DEBUG
+    br.com.will.classes.featuretoggle.meetingroom: DEBUG
 

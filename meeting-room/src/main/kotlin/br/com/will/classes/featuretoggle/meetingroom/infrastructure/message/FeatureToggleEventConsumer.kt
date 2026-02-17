@@ -1,39 +1,37 @@
 package br.com.will.classes.featuretoggle.meetingroom.infrastructure.message
 
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.featuretoggle.FeatureToggleState
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
-import org.springframework.stereotype.Component
 import java.util.function.Consumer
 
-@Component
-class FeatureToggleEventConsumer(
-    private val featureToggleState: FeatureToggleState
-) {
+@Configuration
+class FeatureToggleEventConsumer {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Bean
-    fun toggleUpdatedConsumer(): Consumer<Message<String>> {
+    @Bean("toggleUpdatedInput")
+    fun toggleUpdatedInput(
+        featureToggleState: FeatureToggleState,
+        mapper: ObjectMapper
+    ): Consumer<Message<String>> {
         return Consumer { message ->
             try {
                 val payload = message.payload
-                logger.info("===== [SPRING CLOUD STREAM] Recebido evento customizado de feature toggle =====")
-                logger.info("Payload: {}", payload)
-
                 val headers = message.headers
-                logger.info("Headers: {}", headers)
+                logger.debug("Received feature toggle event - Payload: {}, Headers: {}", payload, headers)
 
-                // TODO: Deserializar e processar a mensagem
-                // Por enquanto, apenas logando para confirmar que está funcionando
+                val event = mapper.readValue(payload, FeatureToggleUpdatedEvent::class.java)
+                featureToggleState.update(event.parameterName, event.parameterValue)
 
-                logger.info("===== Feature toggle customizado processado via Stream =====")
+                logger.info("Updated feature toggle state")
             } catch (e: Exception) {
-                logger.error("===== ERRO ao processar evento customizado via Stream =====", e)
+                logger.error("Error on update feature toggle state", e)
             }
         }
     }
 
 }
-

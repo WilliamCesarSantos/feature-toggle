@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 plugins {
     kotlin("jvm") version "2.1.21" apply false
     kotlin("plugin.spring") version "2.1.21" apply false
+    kotlin("plugin.jpa") version "2.1.21" apply false
     id("org.springframework.boot") version "3.4.1" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
@@ -23,6 +24,7 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.plugin.spring")
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
+    apply(plugin = "org.jetbrains.kotlin.plugin.jpa")
 
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
