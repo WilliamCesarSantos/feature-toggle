@@ -2,6 +2,7 @@ package br.com.will.classes.featuretoggle.configserver.controller
 
 import br.com.will.classes.featuretoggle.configserver.service.MessageService
 import br.com.will.classes.featuretoggle.configserver.service.ParameterService
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -16,15 +17,21 @@ class ParameterController(
     private val messageService: MessageService
 ) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @PostMapping("/update")
     fun updateParameter(
         @RequestBody request: ParameterUpdateRequest
     ): ResponseEntity<ParameterResponse> {
+        logger.info("Updating parameter: name={}, type={}", request.parameterName, request.parameterType)
+
         val message = parameterService.updateParameter(
             parameterName = request.parameterName,
             parameterValue = request.parameterValue,
             parameterType = request.parameterType
         )
+
+        logger.info("Parameter updated successfully: {}", request.parameterName)
 
         return ResponseEntity.ok(
             ParameterResponse(
@@ -39,7 +46,9 @@ class ParameterController(
     fun refreshAllClients(
         @RequestParam("destination", defaultValue = "*") destination: String
     ): ResponseEntity<ParameterResponse> {
+        logger.info("Publishing refresh event to destination: {}", destination)
         messageService.publishRefreshEvent(destination)
+
         return ResponseEntity.ok(
             ParameterResponse(
                 success = true,

@@ -5,9 +5,6 @@ import br.com.will.classes.featuretoggle.meetingroom.domain.exception.InvalidRes
 import br.com.will.classes.featuretoggle.meetingroom.domain.validation.reservation.ReservationValidator
 import org.springframework.stereotype.Component
 
-/**
- * Validates that start time is before end time
- */
 @Component
 class StartTimeBeforeEndTimeValidator : ReservationValidator() {
 

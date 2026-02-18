@@ -26,7 +26,7 @@ class MessageService(
     ) {
         val serviceName = busProperties.id ?: SERVICE_NAME_DEFAULT
         val refreshEvent = RefreshRemoteApplicationEvent(
-            this,
+            "StreamBridge",
             serviceName
         ) { destination }
 
@@ -40,30 +40,54 @@ class MessageService(
         parameterType: String,
         destination: String = "*"
     ) {
-        val serviceName = busProperties.id ?: SERVICE_NAME_DEFAULT
+        val originService = busProperties.id ?: SERVICE_NAME_DEFAULT
+
+        val finalDestination = extractApplicationNameFromParameter(parameterName) ?: destination
+        val convertedParameterName = convertParameterNameToPropertyFormat(parameterName)
+
+        logger.info("Publishing refresh event: parameter={}, destination={}", convertedParameterName, finalDestination)
 
         val refreshEvent = FeatureToggleRefreshEvent(
-            this,
-            serviceName,
-            destination,
-            parameterName,
+            "StreamBridge",
+            originService,
+            finalDestination,
+            convertedParameterName,
             parameterValue,
             parameterType
         )
 
         streamBridge.send(REFRESH_FEATURE_TOGGLE_EVENT_BINDING_NAME, refreshEvent)
 
-        logger.info("Sent custom event: {}", refreshEvent)
+        logger.debug("Event published successfully: destination={}, parameter={}, value={}",
+            finalDestination, convertedParameterName, parameterValue)
+    }
+
+    private fun extractApplicationNameFromParameter(parameterName: String): String? {
+        val parts = parameterName.split("/")
+        return if (parts.size >= 3 && parts[1] == "config") {
+            parts[2]
+        } else {
+            null
+        }
+    }
+
+    private fun convertParameterNameToPropertyFormat(parameterName: String): String {
+        val parts = parameterName.split("/")
+        return if (parts.size >= 4 && parts[1] == "config") {
+            parts.drop(3).joinToString(".")
+        } else {
+            parameterName
+        }
     }
 }
 
 class FeatureToggleRefreshEvent(
-    source: Any,
-    origin: String,
-    destination: String = "**"
+    source: String,
+    originService: String,
+    destination: String = "*"
 ) : RefreshRemoteApplicationEvent(
     source,
-    origin,
+    originService,
     Destination { destination }
 ) {
 
@@ -72,13 +96,13 @@ class FeatureToggleRefreshEvent(
     lateinit var parameterType: String
 
     constructor(
-        source: Any,
+        source: String,
         originService: String,
-        destinationService: String,
+        destination: String,
         parameterName: String,
         parameterValue: String,
         parameterType: String
-    ) : this(source, originService, destinationService) {
+    ) : this(source, originService, destination) {
         this.parameterName = parameterName
         this.parameterValue = parameterValue
         this.parameterType = parameterType

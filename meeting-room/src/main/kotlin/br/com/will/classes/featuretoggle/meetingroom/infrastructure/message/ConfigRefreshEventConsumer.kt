@@ -18,16 +18,15 @@ class ConfigRefreshEventConsumer(
     fun configRefreshConsumer(): Consumer<Message<String>> {
         return Consumer { message ->
             try {
-                logger.info("🔄 Recebida mensagem de refresh do Config Server via Kafka")
+                logger.info("Received config refresh event from Kafka")
                 logger.debug("Payload: {}, Headers: {}", message.payload, message.headers)
 
-                // Refresh do contexto Spring - Isso dispara o EnvironmentChangeEvent automaticamente
-                logger.info("Iniciando refresh do contexto...")
+                logger.debug("Starting context refresh")
                 contextRefresher.refresh()
 
-                logger.info("✅ Contexto atualizado (EnvironmentChangeListener processará as mudanças)")
+                logger.info("Context refreshed successfully")
             } catch (e: Exception) {
-                logger.error("❌ ERRO ao processar evento de refresh", e)
+                logger.error("Error processing refresh event", e)
             }
         }
     }

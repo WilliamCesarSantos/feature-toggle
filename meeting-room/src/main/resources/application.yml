@@ -7,6 +7,8 @@ spring:
   config:
     import: 'configserver:http://localhost:8888'
   cloud:
+    function:
+      definition: toggleUpdatedConsumer;configRefreshConsumer
     config:
       enabled: true
       fail-fast: false
@@ -68,11 +70,3 @@ management:
       show-details: always
     refresh:
       enabled: true
-
-logging:
-  level:
-    org.springframework.cloud.stream: DEBUG
-    org.springframework.cloud.function: DEBUG
-    org.springframework.kafka: DEBUG
-    br.com.will.classes.featuretoggle.meetingroom: DEBUG
-

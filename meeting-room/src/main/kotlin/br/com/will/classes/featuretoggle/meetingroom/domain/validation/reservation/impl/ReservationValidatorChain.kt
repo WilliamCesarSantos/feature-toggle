@@ -3,9 +3,6 @@ package br.com.will.classes.featuretoggle.meetingroom.domain.validation.reservat
 import br.com.will.classes.featuretoggle.meetingroom.domain.validation.reservation.ReservationValidator
 import org.springframework.stereotype.Component
 
-/**
- * Builds the chain of validators using Chain of Responsibility pattern
- */
 @Component
 class ReservationValidatorChain(
     private val startTimeBeforeEndTimeValidator: StartTimeBeforeEndTimeValidator,
@@ -15,16 +12,12 @@ class ReservationValidatorChain(
     private val scheduleConflictValidator: ScheduleConflictValidator
 ) {
 
-    /**
-     * Builds and returns the chain of validators
-     */
     fun buildChain(): ReservationValidator {
-        // Build chain: StartTime -> MinParticipants -> RequesterNotBlank -> Capacity -> ScheduleConflict
         startTimeBeforeEndTimeValidator
-            .setNext(minimumParticipantsValidator)
-            .setNext(requesterNotBlankValidator)
-            .setNext(capacityValidator)
-            .setNext(scheduleConflictValidator)
+            .then(minimumParticipantsValidator)
+            .then(requesterNotBlankValidator)
+            .then(capacityValidator)
+            .then(scheduleConflictValidator)
 
         return startTimeBeforeEndTimeValidator
     }

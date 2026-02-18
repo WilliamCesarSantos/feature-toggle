@@ -1,5 +1,6 @@
 package br.com.will.classes.featuretoggle.configserver.config
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
@@ -14,6 +15,8 @@ import java.net.URI
 @Configuration
 class AwsConfig {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @Bean
     @ConditionalOnMissingBean(SsmClient::class)
     fun ssmClient(
@@ -26,10 +29,14 @@ class AwsConfig {
         @Value("\${spring.cloud.aws.endpoint}")
         endpoint: String?
     ): SsmClient {
+        logger.info("Configuring SSM client: region={}, endpoint={}", region, endpoint)
+
         val builder = SsmClient.builder()
         configureRegion(region, builder)
         configureCredentialsProvider(accessKey, secretKey, builder)
         configureEndpoint(endpoint, builder)
+
+        logger.info("SSM client configured successfully")
         return builder.build()
     }
 
@@ -39,6 +46,7 @@ class AwsConfig {
     ) {
         if (region?.isNotBlank() == true) {
             builder.region(Region.of(region))
+            logger.debug("Region configured: {}", region)
         }
     }
 
@@ -50,6 +58,7 @@ class AwsConfig {
         if (accessKey?.isNotBlank() == true && secretKey?.isNotBlank() == true) {
             val credentials = AwsBasicCredentials.create(accessKey, secretKey)
             builder.credentialsProvider(StaticCredentialsProvider.create(credentials))
+            logger.debug("Credentials provider configured")
         }
     }
 
@@ -59,6 +68,7 @@ class AwsConfig {
     ) {
         if (endpoint?.isNotBlank() == true) {
             builder.endpointOverride(URI.create(endpoint))
+            logger.debug("Endpoint override configured: {}", endpoint)
         }
     }
 

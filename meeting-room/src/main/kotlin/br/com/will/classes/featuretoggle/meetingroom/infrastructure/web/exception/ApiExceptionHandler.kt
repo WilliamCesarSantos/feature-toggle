@@ -4,6 +4,7 @@ import br.com.will.classes.featuretoggle.meetingroom.domain.exception.ConflictEx
 import br.com.will.classes.featuretoggle.meetingroom.domain.exception.InvalidReservationException
 import br.com.will.classes.featuretoggle.meetingroom.domain.exception.InvalidRoomException
 import br.com.will.classes.featuretoggle.meetingroom.domain.exception.ResourceNotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -14,11 +15,15 @@ import java.time.LocalDateTime
 @ControllerAdvice
 class ApiExceptionHandler {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @ExceptionHandler(ResourceNotFoundException::class)
     fun handleResourceNotFoundException(
         ex: ResourceNotFoundException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.warn("Resource not found: {}", ex.message)
+
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.NOT_FOUND.value(),
@@ -34,6 +39,8 @@ class ApiExceptionHandler {
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.warn("Validation error: {}", ex.message)
+
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.BAD_REQUEST.value(),
@@ -49,6 +56,8 @@ class ApiExceptionHandler {
         ex: ConflictException,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.warn("Conflict error: {}", ex.message)
+
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.CONFLICT.value(),
@@ -64,6 +73,8 @@ class ApiExceptionHandler {
         ex: Exception,
         request: WebRequest
     ): ResponseEntity<ErrorResponse> {
+        logger.error("Unexpected error occurred: {}", ex.message, ex)
+
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),

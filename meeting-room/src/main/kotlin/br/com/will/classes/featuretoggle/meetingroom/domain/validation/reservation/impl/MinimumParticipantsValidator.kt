@@ -5,9 +5,6 @@ import br.com.will.classes.featuretoggle.meetingroom.domain.exception.InvalidRes
 import br.com.will.classes.featuretoggle.meetingroom.domain.validation.reservation.ReservationValidator
 import org.springframework.stereotype.Component
 
-/**
- * Validates that participants count is at least 1
- */
 @Component
 class MinimumParticipantsValidator : ReservationValidator() {
 
