@@ -2,7 +2,6 @@ package br.com.will.classes.featuretoggle.configserver.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.bus.BusProperties
-import org.springframework.cloud.bus.event.Destination
 import org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
 import org.springframework.cloud.stream.function.StreamBridge
 import org.springframework.stereotype.Service
@@ -48,12 +47,11 @@ class MessageService(
         logger.info("Publishing refresh event: parameter={}, destination={}", convertedParameterName, finalDestination)
 
         val refreshEvent = FeatureToggleRefreshEvent(
-            "StreamBridge",
-            originService,
-            finalDestination,
-            convertedParameterName,
-            parameterValue,
-            parameterType
+            source = "config-server",
+            originService = originService,
+            parameterName = convertedParameterName,
+            parameterValue = parameterValue,
+            parameterType = parameterType
         )
 
         streamBridge.send(REFRESH_FEATURE_TOGGLE_EVENT_BINDING_NAME, refreshEvent)
@@ -81,31 +79,10 @@ class MessageService(
     }
 }
 
-class FeatureToggleRefreshEvent(
-    source: String,
-    originService: String,
-    destination: String = "*"
-) : RefreshRemoteApplicationEvent(
-    source,
-    originService,
-    Destination { destination }
-) {
-
-    lateinit var parameterName: String
-    lateinit var parameterValue: String
-    lateinit var parameterType: String
-
-    constructor(
-        source: String,
-        originService: String,
-        destination: String,
-        parameterName: String,
-        parameterValue: String,
-        parameterType: String
-    ) : this(source, originService, destination) {
-        this.parameterName = parameterName
-        this.parameterValue = parameterValue
-        this.parameterType = parameterType
-    }
-
-}
+data class FeatureToggleRefreshEvent(
+    val source: String,
+    val originService: String,
+    val parameterName: String,
+    val parameterValue: String,
+    val parameterType: String
+)
