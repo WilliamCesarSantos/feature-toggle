@@ -20,15 +20,14 @@ spring:
       kafka:
         binder:
           auto-create-topics: false
-          brokers: localhost:9092
         bindings:
           toggleUpdatedConsumer-in-0:
             consumer:
-              auto-offset-reset: earliest
+              auto-offset-reset: latest
               enable-auto-commit: true
           configRefreshConsumer-in-0:
             consumer:
-              auto-offset-reset: earliest
+              auto-offset-reset: latest
               enable-auto-commit: true
       function:
         definition: toggleUpdatedConsumer;configRefreshConsumer

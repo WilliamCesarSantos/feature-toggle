@@ -1,11 +1,9 @@
 package br.com.will.classes.featuretoggle.meetingroom.infrastructure.message
 
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.featuretoggle.FeatureToggleState
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.messaging.Message
 import java.util.function.Consumer
 
 @Configuration
@@ -15,18 +13,20 @@ class FeatureToggleEventConsumer {
 
     @Bean("toggleUpdatedConsumer")
     fun toggleUpdatedConsumer(
-        featureToggleState: FeatureToggleState,
-        mapper: ObjectMapper
-    ): Consumer<Message<String>> {
-        return Consumer { message ->
+        featureToggleState: FeatureToggleState
+    ): Consumer<FeatureToggleUpdatedEvent> {
+        return Consumer { event ->
             try {
-                val payload = message.payload
-                logger.debug("Received toggle event: {}", payload)
+                logger.debug("Received toggle event: {}", event)
 
-                val event = mapper.readValue(payload, FeatureToggleUpdatedEvent::class.java)
-                featureToggleState.update(event.parameterName, event.parameterValue)
+                featureToggleState.update(
+                    event.parameterName,
+                    event.parameterValue,
+                    event.createdAt
+                )
 
-                logger.info("Toggle updated: parameter={}, value={}", event.parameterName, event.parameterValue)
+                logger.info("Toggle updated: parameter={}, value={}, timestamp={}",
+                    event.parameterName, event.parameterValue, event.createdAt)
             } catch (e: Exception) {
                 logger.error("Error updating toggle state", e)
             }

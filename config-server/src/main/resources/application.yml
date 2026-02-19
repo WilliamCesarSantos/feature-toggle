@@ -7,7 +7,7 @@ spring:
   profiles:
     active: awsparamstore
 
-    # Config Server - AWS Parameter Store
+  cloud:
     config:
       server:
         awsparamstore:
@@ -31,9 +31,6 @@ spring:
       default-binder: kafka
       bindings:
         springCloudBus-out-0:
-          destination: springCloudBus
-          group: config-server-group
-        springCloudBus-in-0:
           destination: springCloudBus
           group: config-server-group
         toggleUpdated-out-0:
