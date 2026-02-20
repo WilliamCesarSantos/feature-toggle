@@ -6,15 +6,15 @@ WORKDIR /app
 # Copy root gradle files
 COPY gradlew .
 COPY gradlew.bat .
-COPY settings.gradle.kts .
 COPY build.gradle.kts .
 COPY gradle/ gradle/
 
-# Copy config-server module
+# Copy only config-server module
 COPY config-server/ config-server/
 
-# Copy meeting-room directory (needed for Gradle multi-project structure)
-COPY meeting-room/ meeting-room/
+# Create a temporary settings.gradle.kts with only config-server
+RUN echo 'rootProject.name = "feature-toggle"' > settings.gradle.kts && \
+    echo 'include("config-server")' >> settings.gradle.kts
 
 # Build config-server
 RUN ./gradlew :config-server:build -x test --no-daemon
