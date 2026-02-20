@@ -34,7 +34,7 @@ create_parameter() {
 
 # Database Configuration
 echo "=== Database Configuration ==="
-create_parameter "/config/meeting-room/spring/datasource/url" "jdbc:postgresql://localhost:5432/meeting_room_db" "String"
+create_parameter "/config/meeting-room/spring/datasource/url" "jdbc:postgresql://postgres:5432/meeting_room_db" "String"
 create_parameter "/config/meeting-room/spring/datasource/username" "postgres" "String"
 create_parameter "/config/meeting-room/spring/datasource/password" "postgres" "SecureString"
 create_parameter "/config/meeting-room/spring/datasource/driver-class-name" "org.postgresql.Driver" "String"
@@ -48,13 +48,13 @@ create_parameter "/config/meeting-room/spring/jpa/properties/hibernate/format_sq
 
 # Kafka Binder Configuration
 echo "=== Kafka Binder Configuration ==="
-create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/brokers" "localhost:9092" "String"
+create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/brokers" "kafka:9092" "String"
 create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/auto-create-topics" "false" "String"
 create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/replication-factor" "1" "String"
 
 # Kafka Configuration
 echo "=== Kafka Configuration ==="
-create_parameter "/config/meeting-room/spring/kafka/bootstrap-servers" "localhost:9092" "String"
+create_parameter "/config/meeting-room/spring/kafka/bootstrap-servers" "kafka:9092" "String"
 
 # Feature Toggles Configuration
 echo "=== Feature Toggles Configuration ==="

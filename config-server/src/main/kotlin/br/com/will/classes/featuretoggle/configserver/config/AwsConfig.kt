@@ -29,7 +29,10 @@ class AwsConfig {
         @Value("\${spring.cloud.aws.endpoint}")
         endpoint: String?
     ): SsmClient {
-        logger.info("Configuring SSM client: region={}, endpoint={}", region, endpoint)
+        logger.info(
+            "Configuring SSM client: region={}, endpoint={}, hasCredentials={}",
+            region, endpoint, accessKey?.isNotBlank() == true && secretKey?.isNotBlank() == true
+        )
 
         val builder = SsmClient.builder()
         configureRegion(region, builder)

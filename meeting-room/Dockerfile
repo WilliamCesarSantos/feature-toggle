@@ -13,11 +13,17 @@ COPY gradle/ gradle/
 # Copy meeting-room module
 COPY meeting-room/ meeting-room/
 
+# Copy config-server directory (needed for Gradle multi-project structure)
+COPY config-server/ config-server/
+
 # Build meeting-room
 RUN ./gradlew :meeting-room:build -x test --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:25-jdk
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
