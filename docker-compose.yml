@@ -46,121 +46,33 @@ services:
       timeout: 3s
       retries: 10
 
-  kafka:
-    image: apache/kafka:4.1.1
-    container_name: kafka
-    ports:
-      - "9092:9092"
-      - "9093:9093"
-    user: root
-    environment:
-      PATH: /opt/kafka/bin:$PATH
-      # KRaft settings
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-
-      # Listeners
-      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://kafka:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
-      # Cluster settings
-      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
-
-      # Performance settings
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
-      KAFKA_NUM_PARTITIONS: 1
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-    volumes:
-      - kafka_data:/tmp/kraft-combined-logs
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server=kafka:9092 2>&1 | grep -q ApiVersion || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 40s
-
-  kafka-topics-init:
-    image: apache/kafka:4.1.1
-    container_name: kafka-topics-init
-    depends_on:
-      kafka:
-        condition: service_healthy
-    command: >
-      bash -c "
-        export PATH=/opt/kafka/bin:$$PATH &&
-        kafka-topics.sh --create --topic toggle-updated-topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
-        kafka-topics.sh --create --topic springCloudBus --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
-        echo 'Topics created successfully'
-      "
-    networks:
-      - feature-toggle
-
-  config-server:
-    build:
-      context: .
-      dockerfile: config-server/Dockerfile
-    container_name: config-server
-    ports:
-      - "8888:8888"
-    environment:
-      # AWS Configuration
-      - AWS_ACCESS_KEY_ID=guest
-      - AWS_SECRET_ACCESS_KEY=guest
-      - SPRING_CLOUD_AWS_REGION_STATIC=sa-east-1
-      - SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=guest
-      - SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=guest
-      - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
-      - SPRING_CLOUD_CONFIG_SERVER_AWSPARAMSTORE_ENDPOINT=http://localstack:4566
-      - SPRING_CLOUD_CONFIG_SERVER_AWSPARAMSTORE_REGION=sa-east-1
-      # Kafka Configuration
-      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      # Active Profiles
-      - SPRING_PROFILES_ACTIVE=awsparamstore
-    depends_on:
-      localstack:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
-
   meeting-room:
     build:
       context: .
-      dockerfile: meeting-room/Dockerfile
+      dockerfile: Dockerfile
+      args:
+        - GRADLE_OPTS=-Dorg.gradle.daemon=false
     container_name: meeting-room
     ports:
       - "8082:8082"
     environment:
-      # Spring Cloud Config
-      - CONFIG_SERVER_URL=http://config-server:8888
-      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
-      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
-      - SPRING_CLOUD_CONFIG_ENABLED=true
-      - SPRING_APPLICATION_NAME=meeting-room
+      # AWS Credentials and Region (required for AWS SDK)
+      - AWS_ACCESS_KEY_ID=guest
+      - AWS_SECRET_ACCESS_KEY=guest
+      - AWS_REGION=sa-east-1
+
+      # AWS Endpoint for LocalStack
+      - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
+
+      # AWS Parameter Store Configuration
+      - SPRING_CONFIG_IMPORT=aws-parameterstore:/config/meeting-room/
+      - SPRING_CLOUD_AWS_PARAMETERSTORE_ENABLED=true
+      - SPRING_CLOUD_AWS_PARAMETERSTORE_PREFIX=/config
+      - SPRING_CLOUD_AWS_PARAMETERSTORE_FAIL_FAST=false
     depends_on:
-      config-server:
+      localstack:
         condition: service_healthy
       postgres:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
     networks:
       - feature-toggle
@@ -177,4 +89,3 @@ networks:
 
 volumes:
   postgres_data:
-  kafka_data:

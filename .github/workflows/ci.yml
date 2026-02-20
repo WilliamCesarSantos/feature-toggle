@@ -37,11 +37,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build config-server
-        run: ./gradlew :config-server:build -x test
-
-      - name: Build meeting-room
-        run: ./gradlew :meeting-room:build -x test
+      - name: Build application
+        run: ./gradlew build -x test
 
       - name: Run tests
         run: ./gradlew test

@@ -46,15 +46,6 @@ create_parameter "/config/meeting-room/spring/jpa/show-sql" "false" "String"
 create_parameter "/config/meeting-room/spring/jpa/properties/hibernate/dialect" "org.hibernate.dialect.PostgreSQLDialect" "String"
 create_parameter "/config/meeting-room/spring/jpa/properties/hibernate/format_sql" "true" "String"
 
-# Kafka Binder Configuration
-echo "=== Kafka Binder Configuration ==="
-create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/brokers" "kafka:9092" "String"
-create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/auto-create-topics" "false" "String"
-create_parameter "/config/meeting-room/spring/cloud/stream/kafka/binder/replication-factor" "1" "String"
-
-# Kafka Configuration
-echo "=== Kafka Configuration ==="
-create_parameter "/config/meeting-room/spring/kafka/bootstrap-servers" "kafka:9092" "String"
 
 # Feature Toggles Configuration
 echo "=== Feature Toggles Configuration ==="

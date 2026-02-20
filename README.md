@@ -1,20 +1,18 @@
-# Feature Toggle System with Spring Cloud Config and AWS Parameter Store
+# Meeting Room Service with AWS Parameter Store Feature Toggles
 
-A distributed feature toggle management system built with Spring Boot, Spring Cloud Config, Kafka, and AWS Systems Manager Parameter Store (SSM). This project demonstrates how to implement centralized configuration management with real-time feature toggle updates across microservices.
+A Spring Boot microservice for managing meeting room reservations with dynamic feature toggles stored in AWS Systems Manager Parameter Store (SSM). This project demonstrates how to implement feature toggles that can be changed at runtime without redeployment.
 
 ## Architecture Overview
 
-The system consists of three main components:
+The system is a single microservice that directly connects to AWS SSM Parameter Store for configuration management:
 
-1. **Config Server**: Centralized configuration server that fetches configurations from AWS SSM Parameter Store
-2. **Meeting Room Service**: A microservice for managing meeting room reservations with dynamic feature toggles
-3. **Infrastructure**: LocalStack (AWS emulation), Kafka, and PostgreSQL
+- **Meeting Room Service**: A microservice for managing meeting room reservations with dynamic feature toggles
+- **Infrastructure**: LocalStack (AWS emulation) and PostgreSQL
 
 ### Key Features
 
-- ✅ Centralized configuration management using Spring Cloud Config
 - ✅ Dynamic feature toggles stored in AWS SSM Parameter Store
-- ✅ Real-time configuration updates via Kafka messaging
+- ✅ Direct AWS Parameter Store integration with Spring Cloud AWS
 - ✅ Chain of Responsibility pattern for validation rules
 - ✅ Toggle-based feature activation without deployments
 - ✅ LocalStack for local AWS service emulation
@@ -26,49 +24,45 @@ The system consists of three main components:
 ### Backend
 - **Java 25** with **Kotlin**
 - **Spring Boot 3.4.1**
-- **Spring Cloud Config**
-- **Spring Cloud Stream** with Kafka binder
+- **Spring Cloud AWS 3.2.1**
 - **Spring Data JPA**
 - **PostgreSQL** database
 - **Flyway** for database migrations
 
 ### Infrastructure
 - **LocalStack**: AWS services emulation (SSM)
-- **Apache Kafka 4.1.1**: Message broker for configuration updates
 - **PostgreSQL 16**: Relational database
 - **Docker & Docker Compose**: Containerization
 
 ### AWS Services (via LocalStack)
-- **Systems Manager (SSM) Parameter Store**: Configuration storage
+- **Systems Manager (SSM) Parameter Store**: Configuration and feature toggle storage
 
 ## Project Structure
 
 ```
-feature-toggle/
-├── config-server/              # Spring Cloud Config Server
-│   ├── src/main/kotlin/
-│   │   └── br/com/will/classes/featuretoggle/configserver/
-│   │       ├── config/         # AWS and configuration beans
-│   │       ├── controller/     # REST endpoints for parameter updates
-│   │       └── service/        # Business logic
-│   └── Dockerfile
-│
-├── meeting-room/               # Meeting Room Microservice
-│   ├── src/main/kotlin/
-│   │   └── br/com/will/classes/featuretoggle/meetingroom/
-│   │       ├── application/    # Use cases and services
-│   │       ├── domain/         # Domain models and validators
-│   │       ├── infrastructure/ # External integrations
-│   │       │   ├── config/     # Feature toggle configuration
-│   │       │   ├── messaging/  # Kafka consumers
-│   │       │   └── persistence/# Database entities and repositories
-│   │       └── presentation/   # REST controllers
-│   └── Dockerfile
-│
+meeting-room/
+├── src/main/kotlin/
+│   └── br/com/will/classes/featuretoggle/meetingroom/
+│       ├── application/         # Use cases and services
+│       │   ├── port/           # Input/Output ports
+│       │   └── service/        # Business logic
+│       ├── domain/             # Domain models and validators
+│       │   ├── entity/         # Domain entities
+│       │   ├── exception/      # Domain exceptions
+│       │   └── validation/     # Validation chain
+│       └── infrastructure/     # External integrations
+│           ├── config/         # Configuration beans
+│           ├── featuretoggle/  # Feature toggle management
+│           ├── persistence/    # Database entities and repositories
+│           └── web/            # REST controllers and DTOs
+├── src/main/resources/
+│   ├── application.yml         # Application configuration
+│   └── db/migration/           # Flyway migrations
 ├── localstack-init/            # LocalStack initialization scripts
 │   └── init-aws.sh            # Creates SSM parameters
-│
+├── Dockerfile
 ├── docker-compose.yml          # Docker orchestration
+├── build.gradle.kts
 └── README.md
 ```
 
@@ -84,36 +78,26 @@ Feature toggles are stored in AWS SSM Parameter Store with the following structu
 
 Example toggles:
 - `feature.toggles.reservation.capacity-check`: Enable/disable room capacity validation
-- `feature.toggles.reservation.time-conflict`: Enable/disable time conflict validation
-- `feature.toggles.reservation.advance-booking`: Enable/disable advance booking validation
+- `feature.toggles.reservation.schedule-conflict-check`: Enable/disable schedule conflict validation
 
-### Toggle Update Flow
+### Toggle Configuration Flow
 
 ```
-┌─────────────────┐
-│   Config Server │
-│   Update API    │
-└────────┬────────┘
-         │ 1. Update SSM Parameter
-         ▼
 ┌─────────────────┐
 │  AWS SSM Store  │
-│   (LocalStack)  │
+│  (LocalStack)   │
 └────────┬────────┘
-         │ 2. Publish to Kafka
+         │
+         │ On Startup
          ▼
 ┌─────────────────┐
-│  Kafka Topics   │
-│ - toggle-updated│
-│ - springCloudBus│
-└────────┬────────┘
-         │ 3. Consume messages
-         ▼
-┌─────────────────┐
-│  Meeting Room   │
-│    Service      │
+│ Meeting Room    │
+│ Service         │
+│ (Reads toggles) │
 └─────────────────┘
 ```
+
+The application reads configuration from AWS Parameter Store on startup using Spring Cloud AWS.
 
 ## Getting Started
 
@@ -128,31 +112,26 @@ Example toggles:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd feature-toggle
+   cd meeting-room
    ```
 
 2. **Start all services**
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
    This will start:
-   - LocalStack (port 4566)
-   - PostgreSQL (port 5432)
-   - Kafka (port 9092)
-   - Config Server (port 8888)
-   - Meeting Room Service (port 8082)
+   - LocalStack (port 4566) - AWS services emulation
+   - PostgreSQL (port 5432) - Database
+   - Meeting Room Service (port 8082) - Main application
 
 3. **Wait for services to be healthy**
    ```bash
    docker compose ps
    ```
 
-4. **Verify the services are running**
+4. **Verify the service is running**
    ```bash
-   # Check Config Server health
-   curl http://localhost:8888/actuator/health
-   
    # Check Meeting Room Service health
    curl http://localhost:8082/actuator/health
    ```
@@ -164,35 +143,38 @@ The LocalStack initialization script (`localstack-init/init-aws.sh`) automatical
 ```bash
 # Feature toggles
 /config/meeting-room/feature/toggles/reservation.capacity-check = true
-/config/meeting-room/feature/toggles/reservation.time-conflict = true
-/config/meeting-room/feature/toggles/reservation.advance-booking = true
+/config/meeting-room/feature/toggles/reservation.schedule-conflict-check = true
 
 # Database configuration
-/config/meeting-room/spring/datasource/url
-/config/meeting-room/spring/datasource/username
-/config/meeting-room/spring/datasource/password
-/config/meeting-room/spring/jpa/hibernate/ddl-auto
+/config/meeting-room/spring/datasource/url = jdbc:postgresql://postgres:5432/meeting_room_db
+/config/meeting-room/spring/datasource/username = postgres
+/config/meeting-room/spring/datasource/password = postgres
+/config/meeting-room/spring/jpa/hibernate/ddl-auto = none
 ```
+
+### Local Development
+
+To run the application locally without Docker:
+
+1. **Start LocalStack and PostgreSQL**
+   ```bash
+   docker compose up localstack postgres -d
+   ```
+
+2. **Set environment variables**
+   ```bash
+   export AWS_ACCESS_KEY_ID=guest
+   export AWS_SECRET_ACCESS_KEY=guest
+   export AWS_REGION=sa-east-1
+   export AWS_ENDPOINT=http://localhost:4566
+   ```
+
+3. **Run the application**
+   ```bash
+   ./gradlew bootRun
+   ```
 
 ## API Documentation
-
-### Config Server Endpoints
-
-#### Update a Parameter
-```bash
-PUT http://localhost:8888/api/parameters/update
-Content-Type: application/json
-
-{
-  "parameterName": "/config/meeting-room/feature/toggles/reservation.capacity-check",
-  "parameterValue": "false"
-}
-```
-
-This endpoint:
-1. Updates the parameter in SSM
-2. Publishes a message to Kafka topic `toggle-updated-topic`
-3. Notifies all subscribed services
 
 ### Meeting Room Service Endpoints
 
@@ -207,6 +189,20 @@ Content-Type: application/json
 }
 ```
 
+Response:
+```json
+{
+  "id": 1,
+  "name": "Conference Room A",
+  "capacity": 10
+}
+```
+
+#### Get All Meeting Rooms
+```bash
+GET http://localhost:8082/api/rooms
+```
+
 #### Create a Reservation
 ```bash
 POST http://localhost:8082/api/reservations
@@ -214,21 +210,32 @@ Content-Type: application/json
 
 {
   "roomId": 1,
-  "title": "Team Meeting",
+  "requester": "John Doe",
   "startTime": "2026-02-20T10:00:00",
   "endTime": "2026-02-20T11:00:00",
-  "attendees": 5
+  "numberOfParticipants": 5
+}
+```
+
+Response:
+```json
+{
+  "id": 1,
+  "roomId": 1,
+  "requester": "John Doe",
+  "startTime": "2026-02-20T10:00:00",
+  "endTime": "2026-02-20T11:00:00",
+  "numberOfParticipants": 5
 }
 ```
 
 The reservation will be validated based on active feature toggles:
-- If `capacity-check` is enabled: validates attendees ≤ room capacity
-- If `time-conflict` is enabled: validates no overlapping reservations
-- If `advance-booking` is enabled: validates booking is within allowed timeframe
+- If `capacity-check` is enabled: validates numberOfParticipants ≤ room capacity
+- If `schedule-conflict-check` is enabled: validates no overlapping reservations
 
 ## Testing Feature Toggles
 
-### Scenario 1: Disable Capacity Check
+### Scenario 1: Capacity Check Toggle
 
 1. **Create a room with capacity 5**
    ```bash
@@ -237,147 +244,164 @@ The reservation will be validated based on active feature toggles:
      -d '{"name":"Small Room","capacity":5}'
    ```
 
-2. **Try to book with 10 attendees (should fail)**
+2. **Try to book with 10 participants (should fail with capacity-check enabled)**
    ```bash
    curl -X POST http://localhost:8082/api/reservations \
      -H "Content-Type: application/json" \
      -d '{
        "roomId":1,
-       "title":"Big Meeting",
+       "requester":"John Doe",
        "startTime":"2026-02-20T14:00:00",
        "endTime":"2026-02-20T15:00:00",
-       "attendees":10
+       "numberOfParticipants":10
      }'
    ```
+   
+   Expected error: "Number of participants exceeds room capacity"
 
-3. **Disable capacity check**
+3. **Disable capacity check via AWS CLI**
    ```bash
-   curl -X PUT http://localhost:8888/api/parameters/update \
-     -H "Content-Type: application/json" \
-     -d '{
-       "parameterName":"/config/meeting-room/feature/toggles/reservation.capacity-check",
-       "parameterValue":"false"
-     }'
+   aws --endpoint-url=http://localhost:4566 ssm put-parameter \
+     --name "/config/meeting-room/feature/toggles/reservation.capacity-check" \
+     --value "false" \
+     --type "String" \
+     --overwrite
    ```
 
-4. **Wait a few seconds for the update to propagate**
+4. **Restart the application to load new configuration**
+   ```bash
+   docker compose restart meeting-room
+   ```
 
 5. **Try booking again (should succeed now)**
 
-### Scenario 2: Monitor Real-time Updates
+### Scenario 2: Schedule Conflict Check Toggle
 
-1. **Watch Meeting Room Service logs**
+1. **Create a room**
    ```bash
-   docker logs -f meeting-room
+   curl -X POST http://localhost:8082/api/rooms \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Meeting Room","capacity":10}'
    ```
 
-2. **Update a toggle**
+2. **Create a reservation**
    ```bash
-   curl -X PUT http://localhost:8888/api/parameters/update \
+   curl -X POST http://localhost:8082/api/reservations \
      -H "Content-Type: application/json" \
      -d '{
-       "parameterName":"/config/meeting-room/feature/toggles/reservation.time-conflict",
-       "parameterValue":"false"
+       "roomId":1,
+       "requester":"Alice",
+       "startTime":"2026-02-20T10:00:00",
+       "endTime":"2026-02-20T11:00:00",
+       "numberOfParticipants":5
      }'
    ```
 
-3. **Observe the log messages**
-   - Config Server publishes the update
-   - Kafka receives the message
-   - Meeting Room Service consumes and applies the change
+3. **Try to create an overlapping reservation (should fail)**
+   ```bash
+   curl -X POST http://localhost:8082/api/reservations \
+     -H "Content-Type: application/json" \
+     -d '{
+       "roomId":1,
+       "requester":"Bob",
+       "startTime":"2026-02-20T10:30:00",
+       "endTime":"2026-02-20T11:30:00",
+       "numberOfParticipants":5
+     }'
+   ```
+   
+   Expected error: "Room already reserved for this time slot"
 
-## Kafka Topics
+4. **Disable schedule conflict check**
+   ```bash
+   aws --endpoint-url=http://localhost:4566 ssm put-parameter \
+     --name "/config/meeting-room/feature/toggles/reservation.schedule-conflict-check" \
+     --value "false" \
+     --type "String" \
+     --overwrite
+   ```
 
-The system uses two Kafka topics:
+5. **Restart and try again (should allow overlapping reservations)**
 
-1. **toggle-updated-topic**: Feature toggle-specific updates
-   - Published by Config Server when a toggle changes
-   - Consumed by Meeting Room Service
-   - Message format: `FeatureToggleRefreshEvent`
+## Accessing AWS Parameter Store
 
-2. **springCloudBus**: Generic configuration refresh events
-   - Published by Config Server for configuration changes
-   - Consumed by Meeting Room Service
-   - Message format: `RefreshRemoteApplicationEvent`
+### Interactive Parameter Update Script
 
-## AWS SSM Parameter Store
-
-### Parameter Naming Convention
-
-```
-/config/{application-name}/{property-path}
-```
-
-Examples:
-- `/config/meeting-room/feature/toggles/reservation.capacity-check`
-- `/config/meeting-room/spring/datasource/url`
-
-### Querying Parameters with AWS CLI
+The easiest way to update parameters and refresh the application:
 
 ```bash
-# List all parameters
-aws --endpoint-url=http://localhost:4566 ssm describe-parameters
+./update-parameter.sh
+```
 
-# Get a specific parameter
-aws --endpoint-url=http://localhost:4566 ssm get-parameter \
-  --name "/config/meeting-room/feature/toggles/reservation.capacity-check"
+This interactive script will:
+1. Prompt you for the parameter name, value, and type
+2. Update the parameter in AWS SSM Parameter Store
+3. Automatically call the Spring Boot `/actuator/refresh` endpoint
+4. Verify the update was successful
 
-# Get parameter value only
+See [UPDATE-PARAMETER-GUIDE.md](UPDATE-PARAMETER-GUIDE.md) for detailed usage instructions.
+
+### Manual AWS CLI Commands
+
+#### View all parameters
+```bash
+aws --endpoint-url=http://localhost:4566 ssm get-parameters-by-path \
+  --path "/config/meeting-room" \
+  --recursive \
+  --with-decryption
+```
+
+#### Get a specific parameter
+```bash
 aws --endpoint-url=http://localhost:4566 ssm get-parameter \
   --name "/config/meeting-room/feature/toggles/reservation.capacity-check" \
-  --query 'Parameter.Value' \
-  --output text
+  --with-decryption
+```
+
+#### Update a parameter
+```bash
+aws --endpoint-url=http://localhost:4566 ssm put-parameter \
+  --name "/config/meeting-room/feature/toggles/reservation.capacity-check" \
+  --value "true" \
+  --type "String" \
+  --overwrite
+```
+
+#### Refresh application after manual update
+```bash
+curl -X POST http://localhost:8082/actuator/refresh
 ```
 
 ## Development
 
-### Building the Applications
+### Building the Application
 
 ```bash
-# Build Config Server
-./gradlew :config-server:build
-
-# Build Meeting Room Service
-./gradlew :meeting-room:build
-
-# Build both
+# Build the application
 ./gradlew build
+
+# Skip tests
+./gradlew build -x test
+
+# Clean build
+./gradlew clean build
 ```
-
-### Running Locally (without Docker)
-
-1. **Start infrastructure services**
-   ```bash
-   docker compose up -d localstack kafka postgres
-   ```
-
-2. **Run Config Server**
-   ```bash
-   cd config-server
-   ./gradlew bootRun --args='--spring.profiles.active=awsparamstore,aws-local,kafka-local'
-   ```
-
-3. **Run Meeting Room Service**
-   ```bash
-   cd meeting-room
-   ./gradlew bootRun
-   ```
 
 ### Database Migrations
 
 Flyway migrations are located in:
 ```
-meeting-room/src/main/resources/db/migration/
+src/main/resources/db/migration/
 ```
 
-Migrations run automatically on application startup.
+Migrations run automatically on application startup. Current migrations:
+- `V1__Create_meeting_rooms_and_reservations_tables.sql`: Creates initial schema
 
 ## Monitoring and Health Checks
 
-### Health Endpoints
+### Health Endpoint
 
-- Config Server: `http://localhost:8888/actuator/health`
-- Meeting Room: `http://localhost:8082/actuator/health`
+- Meeting Room Service: `http://localhost:8082/actuator/health`
 
 ### Container Health
 
@@ -389,26 +413,23 @@ All services should show `healthy` status when properly running.
 
 ## Troubleshooting
 
-### Config Server can't connect to LocalStack
+### Application can't connect to LocalStack
 
 **Problem**: `Connection refused` or `UnknownHostException`
 
-**Solution**: Ensure LocalStack is healthy before Config Server starts
+**Solution**: Ensure LocalStack is healthy before the application starts
 ```bash
-docker compose restart config-server
+docker compose restart meeting-room
 ```
 
-### Meeting Room Service doesn't receive toggle updates
+### Toggle changes don't apply
 
-**Problem**: Toggle changes don't apply
+**Problem**: Updated parameters in SSM don't reflect in the application
 
-**Solutions**:
-1. Check Kafka is running: `docker compose ps kafka`
-2. Verify topics exist:
-   ```bash
-   docker exec -it kafka kafka-topics.sh --list --bootstrap-server localhost:9092
-   ```
-3. Check consumer logs: `docker logs meeting-room | grep toggle`
+**Solution**: The application reads parameters on startup. Restart to load new values:
+```bash
+docker compose restart meeting-room
+```
 
 ### Database migrations fail
 
@@ -420,31 +441,40 @@ docker compose down -v
 docker compose up -d
 ```
 
+### LocalStack parameters not created
+
+**Problem**: Parameters missing in SSM
+
+**Solution**: Check LocalStack logs and re-run initialization
+```bash
+docker compose logs localstack
+docker compose restart localstack
+```
+
 ## Architecture Decisions
 
 ### Why AWS SSM Parameter Store?
 
-- Hierarchical parameter organization
-- Built-in versioning and change history
-- IAM-based access control (in production)
-- Native AWS integration
-- Easy LocalStack emulation for development
-
-### Why Kafka for Configuration Updates?
-
-- Decoupled architecture
-- Guaranteed message delivery
-- Scalable to multiple service instances
-- Event sourcing of configuration changes
-- Real-time updates without polling
+- **Hierarchical organization**: Parameters organized by application and feature
+- **Built-in versioning**: Track parameter changes over time
+- **IAM-based access control**: Secure parameter access in production
+- **Native AWS integration**: Seamless integration with Spring Cloud AWS
+- **Easy local development**: LocalStack provides full SSM emulation
 
 ### Why Chain of Responsibility for Validations?
 
-- Single Responsibility Principle
-- Easy to add/remove validations
-- Feature toggles control which validations run
-- Testable in isolation
-- Clear validation flow
+- **Single Responsibility Principle**: Each validator handles one concern
+- **Easy to extend**: Add new validations without modifying existing code
+- **Feature toggle control**: Enable/disable validations dynamically
+- **Testable in isolation**: Unit test each validator independently
+- **Clear validation flow**: Validators execute in a defined order
+
+### Why Direct Parameter Store Integration?
+
+- **Simplicity**: No intermediate config server needed
+- **Reduced latency**: Direct AWS SDK calls
+- **Fewer moving parts**: Less infrastructure to maintain
+- **Standard Spring Boot**: Uses Spring Cloud AWS standard features
 
 ## Continuous Integration
 
@@ -454,11 +484,10 @@ The project includes a GitHub Actions CI pipeline that automatically builds and 
 
 The pipeline performs the following steps:
 1. Checkout code
-2. Set up JDK 21
+2. Set up JDK 25
 3. Cache Gradle dependencies
-4. Build config-server module
-5. Build meeting-room module
-6. Run all tests
+4. Build the application
+5. Run all tests
 
 The workflow is defined in `.github/workflows/ci.yml` and runs on:
 - Push to `main` or `develop` branches
@@ -476,14 +505,3 @@ To skip tests:
 ```bash
 ./gradlew clean build -x test
 ```
-
-## License
-
-This project is licensed under the MIT License.
-
-## Acknowledgments
-
-- Spring Cloud Config for centralized configuration
-- LocalStack for AWS service emulation
-- Apache Kafka for event streaming
-

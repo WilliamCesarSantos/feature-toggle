@@ -1,0 +1,38 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: meeting-room
+  config:
+    import: aws-parameterstore:/config/meeting-room/
+  cloud:
+    aws:
+      parameterstore:
+        enabled: true
+        prefix: /config
+        profile-separator: "/"
+        fail-fast: false
+      endpoint: ${AWS_ENDPOINT:http://localhost:4566}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+    out-of-order: false
+    validate-on-migrate: true
+    schemas: public
+    placeholders:
+      schema: public
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,refresh
+  endpoint:
+    health:
+      show-details: always
+    refresh:
+      enabled: true
