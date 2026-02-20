@@ -446,6 +446,37 @@ docker compose up -d
 - Testable in isolation
 - Clear validation flow
 
+## Continuous Integration
+
+The project includes a GitHub Actions CI pipeline that automatically builds and tests the code on every push and pull request.
+
+### CI Pipeline
+
+The pipeline performs the following steps:
+1. Checkout code
+2. Set up JDK 21
+3. Cache Gradle dependencies
+4. Build config-server module
+5. Build meeting-room module
+6. Run all tests
+
+The workflow is defined in `.github/workflows/ci.yml` and runs on:
+- Push to `main` or `develop` branches
+- Pull requests targeting `main` or `develop` branches
+
+### Local Build
+
+To build the project locally (same as CI):
+
+```bash
+./gradlew clean build
+```
+
+To skip tests:
+```bash
+./gradlew clean build -x test
+```
+
 ## License
 
 This project is licensed under the MIT License.
