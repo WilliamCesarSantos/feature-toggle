@@ -10,7 +10,7 @@ class ReservationDtoMapper {
     fun toResponse(domain: Reservation): ReservationResponse {
         return ReservationResponse(
             id = domain.id!!,
-            roomId = domain.roomId,
+            roomId = domain.meetingRoom.id!!,
             participants = domain.participants,
             startTime = domain.startTime,
             endTime = domain.endTime,

@@ -2,18 +2,47 @@ server:
   port: 8888
 
 spring:
+  application:
+    name: config-server
+  profiles:
+    active: awsparamstore
+
   cloud:
     config:
       server:
-        git:
-          uri: https://github.com/example/config-repo
+        awsparamstore:
+          enabled: true
+          origin: "aws:parameter:"
+          prefix: /config
+          profile-separator: "/"
           default-label: main
 
+    # Spring Cloud Bus
+    bus:
+      enabled: true
+      id: ${spring.application.name}:${server.port}
+      refresh:
+        enabled: true
+      env:
+        enabled: true
+
+    # Spring Cloud Stream
+    stream:
+      default-binder: kafka
+      bindings:
+        springCloudBus-out-0:
+          destination: springCloudBus
+          group: config-server-group
+        toggleUpdated-out-0:
+          destination: toggle-updated-topic
+          group: config-server-group
+
+# Management Endpoints
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,env
+        include: health,info,env,refresh,busrefresh
   endpoint:
     health:
       show-details: always

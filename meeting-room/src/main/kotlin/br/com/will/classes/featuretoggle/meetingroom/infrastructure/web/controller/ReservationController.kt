@@ -4,6 +4,7 @@ import br.com.will.classes.featuretoggle.meetingroom.application.port.input.Mana
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.web.dto.CreateReservationRequest
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.web.dto.ReservationResponse
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.web.mapper.ReservationDtoMapper
+import org.slf4j.LoggerFactory
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,20 +18,25 @@ class ReservationController(
     private val reservationDtoMapper: ReservationDtoMapper
 ) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @GetMapping("/{id}")
     fun getReservationById(@PathVariable id: Long): ResponseEntity<ReservationResponse> {
+        logger.debug("GET /api/reservations/{} - Fetching reservation", id)
         val reservation = manageReservationUseCase.getReservationById(id)
         return ResponseEntity.ok(reservationDtoMapper.toResponse(reservation))
     }
     
     @GetMapping("/room/{roomId}")
     fun getReservationsByRoom(@PathVariable roomId: Long): ResponseEntity<List<ReservationResponse>> {
+        logger.debug("GET /api/reservations/room/{} - Listing reservations for room", roomId)
         val reservations = manageReservationUseCase.findReservationsByRoom(roomId)
         return ResponseEntity.ok(reservations.map(reservationDtoMapper::toResponse))
     }
     
     @GetMapping("/requester")
     fun getReservationsByRequester(@RequestParam requester: String): ResponseEntity<List<ReservationResponse>> {
+        logger.debug("GET /api/reservations/requester?requester={}", requester)
         val reservations = manageReservationUseCase.findReservationsByRequester(requester)
         return ResponseEntity.ok(reservations.map(reservationDtoMapper::toResponse))
     }
@@ -41,6 +47,7 @@ class ReservationController(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) startTime: LocalDateTime,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) endTime: LocalDateTime
     ): ResponseEntity<List<ReservationResponse>> {
+        logger.debug("GET /api/reservations/room/{}/conflicts - Checking conflicts", roomId)
         val conflictingReservations = manageReservationUseCase.findReservationsByTimeRange(
             roomId, startTime, endTime
         )
@@ -49,6 +56,8 @@ class ReservationController(
     
     @PostMapping
     fun createReservation(@RequestBody request: CreateReservationRequest): ResponseEntity<ReservationResponse> {
+        logger.info("POST /api/reservations - Creating reservation: roomId={}, requester={}",
+            request.roomId, request.requester)
         val reservation = manageReservationUseCase.createReservation(
             roomId = request.roomId,
             participants = request.participants,
@@ -63,6 +72,7 @@ class ReservationController(
     
     @DeleteMapping("/{id}")
     fun cancelReservation(@PathVariable id: Long): ResponseEntity<Void> {
+        logger.info("DELETE /api/reservations/{} - Canceling reservation", id)
         manageReservationUseCase.cancelReservation(id)
         return ResponseEntity.noContent().build()
     }

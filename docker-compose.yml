@@ -8,14 +8,13 @@ services:
       - "4566:4566"
       - "4571:4571"
     environment:
-      - DEBUG=1
       - DATA_DIR=/tmp/localstack/data
       - LAMBDA_EXECUTOR=docker
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - SERVICES=sns,sqs,ssm,s3
+      - AWS_DEFAULT_REGION=sa-east-1
+      - AWS_ACCESS_KEY_ID=guest
+      - AWS_SECRET_ACCESS_KEY=guest
+      - SERVICES=ssm,s3
     volumes:
       - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -23,91 +22,10 @@ services:
     networks:
       - feature-toggle
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "curl", "-f", "http://localstack:4566/_localstack/health"]
       interval: 5s
       timeout: 3s
       retries: 10
-
-  config-server:
-    build:
-      context: .
-      dockerfile: config-server/Dockerfile
-    container_name: config-server
-    ports:
-      - "8888:8888"
-    environment:
-      - AWS_ENDPOINT_URL=http://localstack:4566
-      - AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-    depends_on:
-      localstack:
-        condition: service_healthy
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  toggle-stream:
-    build:
-      context: .
-      dockerfile: toggle-stream/Dockerfile
-    container_name: toggle-stream
-    ports:
-      - "8081:8081"
-    environment:
-      - AWS_ENDPOINT_URL=http://localstack:4566
-      - AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - SPRING_CLOUD_STREAM_BINDINGS_TOGGLE_OUT_DESTINATION=feature-toggle-topic
-    depends_on:
-      localstack:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  meeting-room:
-    build:
-      context: .
-      dockerfile: meeting-room/Dockerfile
-    container_name: meeting-room
-    ports:
-      - "8082:8082"
-    environment:
-      - AWS_ENDPOINT_URL=http://localstack:4566
-      - AWS_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - SPRING_CLOUD_STREAM_BINDINGS_TOGGLE_IN_DESTINATION=feature-toggle-topic
-      - SPRING_CLOUD_STREAM_BINDINGS_TOGGLE_IN_GROUP=meeting-room
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/meeting_room_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-    depends_on:
-      localstack:
-        condition: service_healthy
-      config-server:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    networks:
-      - feature-toggle
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   postgres:
     image: postgres:16-alpine
@@ -128,9 +46,135 @@ services:
       timeout: 3s
       retries: 10
 
+  kafka:
+    image: apache/kafka:4.1.1
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    user: root
+    environment:
+      PATH: /opt/kafka/bin:$PATH
+      # KRaft settings
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://kafka:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Cluster settings
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+
+      # Performance settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/tmp/kraft-combined-logs
+    networks:
+      - feature-toggle
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server=kafka:9092 2>&1 | grep -q ApiVersion || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  kafka-topics-init:
+    image: apache/kafka:4.1.1
+    container_name: kafka-topics-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+        export PATH=/opt/kafka/bin:$$PATH &&
+        kafka-topics.sh --create --topic toggle-updated-topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        kafka-topics.sh --create --topic springCloudBus --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1 --if-not-exists || true &&
+        echo 'Topics created successfully'
+      "
+    networks:
+      - feature-toggle
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      # AWS Configuration
+      - AWS_ACCESS_KEY_ID=guest
+      - AWS_SECRET_ACCESS_KEY=guest
+      - SPRING_CLOUD_AWS_REGION_STATIC=sa-east-1
+      - SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=guest
+      - SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=guest
+      - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
+      - SPRING_CLOUD_CONFIG_SERVER_AWSPARAMSTORE_ENDPOINT=http://localstack:4566
+      - SPRING_CLOUD_CONFIG_SERVER_AWSPARAMSTORE_REGION=sa-east-1
+      # Kafka Configuration
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Active Profiles
+      - SPRING_PROFILES_ACTIVE=awsparamstore
+    depends_on:
+      localstack:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - feature-toggle
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://config-server:8888/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  meeting-room:
+    build:
+      context: .
+      dockerfile: meeting-room/Dockerfile
+    container_name: meeting-room
+    ports:
+      - "8082:8082"
+    environment:
+      # Spring Cloud Config
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CLOUD_CONFIG_ENABLED=true
+      - SPRING_APPLICATION_NAME=meeting-room
+    depends_on:
+      config-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - feature-toggle
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://meeting-room:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 networks:
   feature-toggle:
     driver: bridge
 
 volumes:
   postgres_data:
+  kafka_data:

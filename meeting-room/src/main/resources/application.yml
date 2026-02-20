@@ -1,17 +1,55 @@
+server:
+  port: 8082
+
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/meeting_room_db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+  application:
+    name: meeting-room
+  config:
+    import: 'configserver:${CONFIG_SERVER_URL:http://localhost:8888}'
+  cloud:
+    function:
+      definition: toggleUpdatedConsumer;configRefreshConsumer
+    config:
+      enabled: true
+      fail-fast: false
+      retry:
+        max-attempts: 3
+        initial-interval: 1000
+    stream:
+      default-binder: kafka
+      kafka:
+        binder:
+          auto-create-topics: false
+        bindings:
+          toggleUpdatedConsumer-in-0:
+            consumer:
+              auto-offset-reset: latest
+              enable-auto-commit: true
+          configRefreshConsumer-in-0:
+            consumer:
+              auto-offset-reset: latest
+              enable-auto-commit: true
+      function:
+        definition: toggleUpdatedConsumer;configRefreshConsumer
+      bindings:
+        toggleUpdatedConsumer-in-0:
+          destination: toggle-updated-topic
+          group: meeting-room-toggles-group
+          binder: kafka
+          consumer:
+            auto-startup: true
+            use-native-decoding: false
+            max-attempts: 1
+            concurrency: 1
+        configRefreshConsumer-in-0:
+          destination: springCloudBus
+          group: meeting-room-config-refresh-group
+          binder: kafka
+          consumer:
+            auto-startup: true
+            use-native-decoding: false
+            max-attempts: 1
+            concurrency: 1
 
   flyway:
     enabled: true
@@ -24,32 +62,13 @@ spring:
     placeholders:
       schema: public
 
-  cloud:
-    stream:
-      bindings:
-        toggle-in:
-          destination: metting-room-feature-toggle-topic
-          group: meeting-room
-      binder: sqs
-    aws:
-      credentials:
-        static:
-          access-key: test
-          secret-key: test
-      region:
-        static: us-east-1
-      endpoint:
-        uri: http://localhost:4566
-
-aws:
-  sqs:
-    endpoint: http://localhost:4566
-  sns:
-    endpoint: http://localhost:4566
-
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
-
+        include: health,info,env,refresh
+  endpoint:
+    health:
+      show-details: always
+    refresh:
+      enabled: true

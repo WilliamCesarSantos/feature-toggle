@@ -1,16 +1,19 @@
 package br.com.will.classes.featuretoggle.meetingroom.infrastructure.persistence.mapper
 
+    import br.com.will.classes.featuretoggle.meetingroom.application.port.output.LoadRoomPort
 import br.com.will.classes.featuretoggle.meetingroom.domain.entity.Reservation
 import br.com.will.classes.featuretoggle.meetingroom.infrastructure.persistence.entity.ReservationJpaEntity
 import org.springframework.stereotype.Component
 
 @Component
-class ReservationMapper {
+class ReservationMapper(
+    private val loadRoomPort: LoadRoomPort
+) {
 
     fun toEntity(domain: Reservation): ReservationJpaEntity {
         return ReservationJpaEntity(
             id = domain.id,
-            roomId = domain.roomId,
+            roomId = domain.meetingRoom.id!!,
             participants = domain.participants,
             startTime = domain.startTime,
             endTime = domain.endTime,
@@ -21,9 +24,12 @@ class ReservationMapper {
     }
     
     fun toDomain(entity: ReservationJpaEntity): Reservation {
+        val meetingRoom = loadRoomPort.loadById(entity.roomId)
+            ?: throw IllegalStateException("MeetingRoom with id ${entity.roomId} not found")
+
         return Reservation.reconstitute(
             id = entity.id!!,
-            roomId = entity.roomId,
+            meetingRoom = meetingRoom,
             participants = entity.participants,
             startTime = entity.startTime,
             endTime = entity.endTime,
@@ -33,3 +39,4 @@ class ReservationMapper {
         )
     }
 }
+

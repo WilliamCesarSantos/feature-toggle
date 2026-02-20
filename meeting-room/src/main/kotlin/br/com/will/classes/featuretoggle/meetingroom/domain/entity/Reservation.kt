@@ -1,11 +1,11 @@
 package br.com.will.classes.featuretoggle.meetingroom.domain.entity
 
-import br.com.will.classes.featuretoggle.meetingroom.domain.exception.InvalidReservationException
+import br.com.will.classes.featuretoggle.meetingroom.domain.validation.reservation.ReservationValidator
 import java.time.LocalDateTime
 
 class Reservation private constructor(
     val id: Long?,
-    val roomId: Long,
+    val meetingRoom: MeetingRoom,
     val participants: Int,
     val startTime: LocalDateTime,
     val endTime: LocalDateTime,
@@ -13,27 +13,15 @@ class Reservation private constructor(
     val notes: String?,
     val createdAt: LocalDateTime
 ) {
-    init {
-        validate()
+
+    fun validate(validator: ReservationValidator): Reservation {
+        validator.validate(this)
+        return this
     }
 
-    private fun validate() {
-        if (startTime.isAfter(endTime)) {
-            throw InvalidReservationException("Start time must be before end time")
-        }
-        
-        if (participants < 1) {
-            throw InvalidReservationException("Number of participants must be at least 1")
-        }
-        
-        if (requester.isBlank()) {
-            throw InvalidReservationException("Requester name cannot be empty")
-        }
-    }
-    
     companion object {
         fun create(
-            roomId: Long,
+            meetingRoom: MeetingRoom,
             participants: Int,
             startTime: LocalDateTime,
             endTime: LocalDateTime,
@@ -42,7 +30,7 @@ class Reservation private constructor(
         ): Reservation {
             return Reservation(
                 id = null,
-                roomId = roomId,
+                meetingRoom = meetingRoom,
                 participants = participants,
                 startTime = startTime,
                 endTime = endTime,
@@ -54,7 +42,7 @@ class Reservation private constructor(
         
         fun reconstitute(
             id: Long,
-            roomId: Long,
+            meetingRoom: MeetingRoom,
             participants: Int,
             startTime: LocalDateTime,
             endTime: LocalDateTime,
@@ -64,7 +52,7 @@ class Reservation private constructor(
         ): Reservation {
             return Reservation(
                 id = id,
-                roomId = roomId,
+                meetingRoom = meetingRoom,
                 participants = participants,
                 startTime = startTime,
                 endTime = endTime,
@@ -75,3 +63,4 @@ class Reservation private constructor(
         }
     }
 }
+
