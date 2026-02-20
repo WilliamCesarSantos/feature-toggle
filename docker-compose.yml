@@ -60,6 +60,7 @@ services:
       - AWS_ACCESS_KEY_ID=guest
       - AWS_SECRET_ACCESS_KEY=guest
       - AWS_REGION=sa-east-1
+      - AWS_DEFAULT_REGION=sa-east-1
 
       # AWS Endpoint for LocalStack
       - SPRING_CLOUD_AWS_ENDPOINT=http://localstack:4566
