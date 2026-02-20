@@ -1,5 +1,5 @@
 # Build stage
-FROM gradle:9-jdk25 as builder
+FROM gradle:9-jdk25-alpine as builder
 
 WORKDIR /app
 
@@ -20,10 +20,10 @@ COPY meeting-room/ meeting-room/
 RUN ./gradlew :config-server:build -x test --no-daemon
 
 # Runtime stage
-FROM eclipse-temurin:25-jdk
+FROM eclipse-temurin:25-jre-alpine
 
 # Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
